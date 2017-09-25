@@ -5,7 +5,7 @@ function init() {
     CONFIG="config"
     HOOKS="hooks"
 
-    SCRIPT_FILES="git-ci"
+    SCRIPT_FILES=("git-ci" "git-clog")
     TEMPLATE_FILES="git-message-template"
 
     USER_HOME="$(env|grep ^HOME=|cut -c 6-)"
@@ -15,12 +15,13 @@ function init() {
     fi
 
     if [[ -z "$REPO_HOME" ]]; then
-        REPO_HOME="https://github.com/tonydeng/git-toolkit.git"
+        REPO_HOME="https://github.com/cimhealth/git-toolkit.git"
     fi
 
     COMAND_PATHS=("/usr/local/bin" "$USER_HOME/bin")
     INSTALL_PATHS=("/usr/local/$REPO_NAME" "$USER_HOME/.$REPO_NAME")
     PATH_NUM=0
+    uname -a|egrep -i linux && { echo $PATH|egrep /usr/local/sbin || PATH=$PATH:/usr/local/sbin ; }
     for p in "${COMAND_PATHS[@]}" ; do
         if [[ "$(echo $PATH | grep "${p}")" ]]; then
             touch "$p/git-toolkit-temp" > /dev/null 2>&1
@@ -32,7 +33,7 @@ function init() {
         fi
         PATH_NUM=$(($PATH_NUM+1))
     done
-    if [[ $PATH_NUM =~ ^[0-${#COMAND_PATHS[@]-1}] ]]; then
+    if [[ $PATH_NUM =~ ^[0-$(expr ${#COMAND_PATHS[@]} - 1)] ]]; then
         INSTALL_PATH=${INSTALL_PATHS[PATH_NUM]}
     fi
 
@@ -52,7 +53,7 @@ function uninstall() {
 
     if [ -d "$COMMAND_PATH_PREFIX" ] ; then
         echo "Uninstalling $REPO_NAME command from $COMMAND_PATH_PREFIX"
-        for script_file in $SCRIPT_FILES ; do
+        for script_file in "${SCRIPT_FILES[@]}" ; do
             echo "rm -vf $COMMAND_PATH_PREFIX/$script_file"
             rm -vf "$COMMAND_PATH_PREFIX/$script_file"
         done
@@ -105,7 +106,7 @@ function clone() {
 function install_cmd() {
     echo "Install Git Command......"
     mkdir -p $COMMAND_PATH_PREFIX
-    for script_file in $SCRIPT_FILES ; do
+    for script_file in "${SCRIPT_FILES[@]}" ; do
         ln -s "$INSTALL_PATH/$COMMAND/$script_file" "$COMMAND_PATH_PREFIX/$script_file" > /dev/null 2>&1 || echo "$COMMAND_PATH_PREFIX/$script_file installed."
     done
 
@@ -127,7 +128,7 @@ function install_hooks() {
     git config --global core.hooksPath "$INSTALL_PATH/$HOOKS"
 }
 
-init
+uname -a|egrep -i linux &&  { [ `id -u` -eq 0 ] && init || { echo "Please  sudo  bash installer.sh " && exit 0 ; } ; } || init
 echo "### $REPO_NAME no-make installer ###"
 case $1 in
     uninstall)
